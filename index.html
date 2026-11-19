@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Word Game</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #74ebd5, #ACB6E5); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .contenedor { width: 100%; max-width: 600px; }
+        .pantalla { background: white; padding: 30px; border-radius: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.20); }
+        h1 { color: #333; margin-bottom: 10px; }
+        h2, p { color: #555; }
+        #inicio input { width: 90%; max-width: 400px; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 18px; margin: 15px 0; }
+        button { cursor: pointer; }
+        .boton-principal { background: #3498db; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; }
+        .boton-principal:hover, .opcion:hover { background: #217dbb; }
+        #juego, #final, #ranking { display: none; }
+        #imagen { font-size: 130px; margin: 20px 0; }
+        #progreso { font-weight: bold; color: #777; }
+        #puntaje { font-size: 20px; font-weight: bold; }
+        .opcion { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 12px; background: #3498db; color: white; font-size: 18px; }
+        .opcion:disabled { opacity: 0.7; cursor: not-allowed; }
+        #resultado { min-height: 35px; font-size: 22px; font-weight: bold; margin: 20px 0; }
+        #siguiente { display: none; background: #27ae60; color: white; border: none; padding: 14px 25px; border-radius: 12px; font-size: 17px; }
+        #siguiente:hover { background: #219150; }
+        #resultadoFinal { font-size: 25px; }
+        .boton-reiniciar { background: #e67e22; color: white; border: none; padding: 15px 30px; border-radius: 12px; font-size: 18px; margin: 10px; }
+        .boton-reiniciar:hover { background: #cf6d17; }
+        #ranking { margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+        th { background: #3498db; color: white; }
+        .medalla { font-size: 20px; }
+    </style>
+</head>
+<body>
+<div class="contenedor"><div class="pantalla">
+<div id="inicio">
+    <h1>🎮 Image to Word</h1><h2>English Vocabulary Game</h2>
+    <p>Identify the image and choose the correct word in English.</p>
+    <input type="text" id="nombre" placeholder="Enter your name"><br>
+    <button class="boton-principal" onclick="comenzarJuego()">▶ Start Game</button><br><br>
+    <button class="boton-principal" onclick="mostrarRanking()">🏆 View Ranking</button>
+</div>
+<div id="juego">
+    <h1>🎮 Image to Word</h1><p id="jugador"></p><p id="progreso">Question 1 of 10</p><p id="puntaje">Score: 0</p>
+    <h2>What is this?</h2><div id="imagen">🍎</div><div id="opciones"></div><div id="resultado"></div>
+    <button id="siguiente" onclick="siguientePregunta()">Next Question ➡️</button>
+</div>
+<div id="final">
+    <h1>🎉 Game Finished!</h1><h2 id="resultadoFinal"></h2><p id="mensajeFinal"></p>
+    <button class="boton-reiniciar" onclick="reiniciarJuego()">🔄 Play Again</button>
+    <button class="boton-reiniciar" onclick="mostrarRanking()">🏆 View Ranking</button>
+</div>
+<div id="ranking">
+    <h1>🏆 Ranking</h1><p>Best scores</p>
+    <table><thead><tr><th>Position</th><th>Player</th><th>Score</th></tr></thead><tbody id="tablaRanking"></tbody></table><br>
+    <button class="boton-principal" onclick="volverInicio()">⬅ Back</button>
+</div>
+</div></div>
+<script>
+const preguntas = [
+    { imagen: "🍎", respuesta: "Apple", opciones: ["Apple", "Banana", "Watermelon"] },
+    { imagen: "🍌", respuesta: "Banana", opciones: ["Orange", "Banana", "Apple"] },
+    { imagen: "🍉", respuesta: "Watermelon", opciones: ["Watermelon", "Apple", "Banana"] },
+    { imagen: "🍊", respuesta: "Orange", opciones: ["Apple", "Orange", "Grapes"] },
+    { imagen: "🍇", respuesta: "Grapes", opciones: ["Banana", "Grapes", "Orange"] },
+    { imagen: "🐶", respuesta: "Dog", opciones: ["Cat", "Dog", "Bird"] },
+    { imagen: "🐱", respuesta: "Cat", opciones: ["Cat", "Horse", "Dog"] },
+    { imagen: "🐟", respuesta: "Fish", opciones: ["Bird", "Fish", "Dog"] },
+    { imagen: "🚗", respuesta: "Car", opciones: ["Bus", "Car", "Bike"] },
+    { imagen: "🏠", respuesta: "House", opciones: ["School", "House", "Car"] }
+];
+let preguntaActual = 0;
+let puntos = 0;
+let nombreJugador = "";
+function comenzarJuego() {
+    const nombre = document.getElementById("nombre").value.trim();
+    if (nombre === "") { alert("Please enter your name."); return; }
+    nombreJugador = nombre;
+    document.getElementById("inicio").style.display = "none";
+    document.getElementById("juego").style.display = "block";
+    document.getElementById("jugador").innerHTML = "Player: <b>" + nombreJugador + "</b>";
+    preguntaActual = 0; puntos = 0; mostrarPregunta();
+}
+function mostrarPregunta() {
+    const pregunta = preguntas[preguntaActual];
+    document.getElementById("imagen").innerHTML = pregunta.imagen;
+    document.getElementById("progreso").innerHTML = "Question " + (preguntaActual + 1) + " of " + preguntas.length;
+    document.getElementById("puntaje").innerHTML = "Score: " + puntos;
+    document.getElementById("resultado").innerHTML = "";
+    document.getElementById("siguiente").style.display = "none";
+    const contenedor = document.getElementById("opciones");
+    contenedor.innerHTML = "";
+    pregunta.opciones.forEach(function(opcion) {
+        const boton = document.createElement("button");
+        boton.innerHTML = opcion;
+        boton.classList.add("opcion");
+        boton.onclick = function() { comprobarRespuesta(opcion); };
+        contenedor.appendChild(boton);
+    });
+}
+function comprobarRespuesta(respuesta) {
+    const pregunta = preguntas[preguntaActual];
+    document.querySelectorAll(".opcion").forEach(function(boton) { boton.disabled = true; });
+    if (respuesta === pregunta.respuesta) {
+        puntos++;
+        document.getElementById("resultado").innerHTML = "✅ Correct!";
+        document.getElementById("resultado").style.color = "green";
+    } else {
+        document.getElementById("resultado").innerHTML = "❌ Incorrect! The answer is " + pregunta.respuesta;
+        document.getElementById("resultado").style.color = "red";
+    }
+    document.getElementById("puntaje").innerHTML = "Score: " + puntos;
+    document.getElementById("siguiente").style.display = "inline-block";
+}
+function siguientePregunta() {
+    preguntaActual++;
+    if (preguntaActual < preguntas.length) { mostrarPregunta(); } else { terminarJuego(); }
+}
+function terminarJuego() {
+    guardarResultado();
+    document.getElementById("juego").style.display = "none";
+    document.getElementById("final").style.display = "block";
+    document.getElementById("resultadoFinal").innerHTML = nombreJugador + ", your score is " + puntos + " / " + preguntas.length;
+    if (puntos === 10) { document.getElementById("mensajeFinal").innerHTML = "🏆 Excellent! Perfect score!"; }
+    else if (puntos >= 7) { document.getElementById("mensajeFinal").innerHTML = "👏 Very good job!"; }
+    else if (puntos >= 5) { document.getElementById("mensajeFinal").innerHTML = "👍 Good job! Keep practicing!"; }
+    else { document.getElementById("mensajeFinal").innerHTML = "💪 Keep practicing English!"; }
+}
+function guardarResultado() {
+    const resultados = JSON.parse(localStorage.getItem("resultadosJuego")) || [];
+    resultados.push({ nombre: nombreJugador, puntos: puntos });
+    localStorage.setItem("resultadosJuego", JSON.stringify(resultados));
+}
+function mostrarRanking() {
+    document.getElementById("inicio").style.display = "none";
+    document.getElementById("juego").style.display = "none";
+    document.getElementById("final").style.display = "none";
+    document.getElementById("ranking").style.display = "block";
+    const resultados = JSON.parse(localStorage.getItem("resultadosJuego")) || [];
+    resultados.sort(function(a, b) { return b.puntos - a.puntos; });
+    const tabla = document.getElementById("tablaRanking");
+    tabla.innerHTML = "";
+    if (resultados.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="3">No players yet</td></tr>`;
+        return;
+    }
+    resultados.forEach(function(resultado, indice) {
+        let medalla = "";
+        if (indice === 0) { medalla = "🥇"; }
+        else if (indice === 1) { medalla = "🥈"; }
+        else if (indice === 2) { medalla = "🥉"; }
+        tabla.innerHTML += `<tr><td>${medalla} ${indice + 1}</td><td>${resultado.nombre}</td><td>${resultado.puntos} / ${preguntas.length}</td></tr>`;
+    });
+}
+function volverInicio() {
+    document.getElementById("ranking").style.display = "none";
+    document.getElementById("inicio").style.display = "block";
+}
+function reiniciarJuego() {
+    preguntaActual = 0; puntos = 0;
+    document.getElementById("final").style.display = "none";
+    document.getElementById("inicio").style.display = "block";
+    document.getElementById("nombre").value = "";
+}
+</script>
+</body>
+</html>
